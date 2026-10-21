@@ -14,6 +14,13 @@ const App = () => {
   const [error, setError] = useState('');
 
   useEffect(() => {
+    const saved = localStorage.getItem('gk_products');
+    if (saved) {
+      setProducts(JSON.parse(saved));
+      setLoading(false);
+      return;
+    }
+
     const controller = new AbortController();
     axios
       .get('/data/products.json', { signal: controller.signal })
@@ -21,11 +28,19 @@ const App = () => {
         setProducts(res.data);
         setLoading(false);
       })
-      .catch(() => {
+      .catch((err) => {
+        if (axios.isCancel(err)) return;
         setError('Không tải được dữ liệu');
         setLoading(false);
       });
+
+    return () => controller.abort();
   }, []);
+
+  useEffect(() => {
+    if (loading || error) return;
+    localStorage.setItem('gk_products', JSON.stringify(products));
+  }, [products, loading, error]);
 
   const addProduct = (item) => {
     const newId = products.reduce((max, p) => (p.id > max ? p.id : max), 0) + 1;
